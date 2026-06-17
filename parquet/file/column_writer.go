@@ -489,8 +489,9 @@ func (w *columnWriter) writeLevels(numValues int64, defLevels, repLevels []int16
 
 		w.WriteRepetitionLevels(repLevels[:numValues])
 	} else {
-		// each value is exactly 1 row
-		w.numBufferedRows += int(numValues)
+		// each value is exactly 1 row, except for VECTOR columns where each row
+		// spans effectiveVectorLength leaf slots
+		w.numBufferedRows += w.rowsForLeafValues(numValues)
 	}
 	return toWrite
 }
@@ -508,7 +509,7 @@ func (w *columnWriter) writeLevelsSpaced(numLevels int64, defLevels, repLevels [
 		}
 		w.WriteRepetitionLevels(repLevels[:numLevels])
 	} else {
-		w.numBufferedRows += int(numLevels)
+		w.numBufferedRows += w.rowsForLeafValues(numLevels)
 	}
 }
 
@@ -653,8 +654,60 @@ func (w *columnWriter) Close() (err error) {
 	return err
 }
 
+// rowsForLeafValues converts a count of physical leaf values (slots) to the
+// number of parent rows they represent. For VECTOR columns (Option B) each row
+// contributes effectiveVectorLength leaf slots; for every other column each leaf
+// value is exactly one row at this nesting level. VECTOR page/column statistics
+// intentionally remain flattened element-level statistics, not vector-level or
+// lexicographic-vector ordering statistics.
+func (w *columnWriter) rowsForLeafValues(numLeafValues int64) int {
+	if vectorLen := w.vectorLengthForBatch(numLeafValues); vectorLen > 0 {
+		return int(numLeafValues / vectorLen)
+	}
+	return int(numLeafValues)
+}
+
+func (w *columnWriter) vectorLengthForBatch(total int64) int64 {
+	if !w.descr.InVectorColumn() {
+		return 0
+	}
+	vectorLen := int64(w.descr.EffectiveVectorLength())
+	if vectorLen <= 0 || total%vectorLen != 0 {
+		panic("columnwriter: VECTOR columns must be written in whole-vector batches")
+	}
+	return vectorLen
+}
+
+func alignBatchToVector(batch, vectorLen int64) int64 {
+	if vectorLen <= 0 {
+		return batch
+	}
+	if aligned := batch - batch%vectorLen; aligned >= vectorLen {
+		return aligned
+	}
+	return vectorLen
+}
+
+func (w *columnWriter) doBatchesAlignedForVector(total int64, repLevels []int16, action func(offset, batch int64)) {
+	if w.descr.InVectorColumn() {
+		w.doBatches(total, repLevels, action)
+		return
+	}
+	doBatches(total, w.props.WriteBatchSize(), action)
+}
+
 func (w *columnWriter) doBatches(total int64, repLevels []int16, action func(offset, batch int64)) {
 	batchSize := w.props.WriteBatchSize()
+	// VECTOR columns: a vector value occupies effectiveVectorLength contiguous
+	// leaf slots and must not be split across data pages. Page flushes are
+	// evaluated once per batch, so batching on whole-vector boundaries keeps
+	// every page boundary on a whole-vector boundary. (VECTOR columns have
+	// max repetition level 0, so without this they would fall into the plain
+	// batching path below and could split a vector across pages.)
+	if vectorLen := w.vectorLengthForBatch(total); vectorLen > 0 {
+		doBatches(total, alignBatchToVector(batchSize, vectorLen), action)
+		return
+	}
 	// if we're writing V1 data pages, have no replevels or the max replevel is 0 then just
 	// use the regular doBatches function
 	if w.props.DataPageVersion() == parquet.DataPageV1 || repLevels == nil || w.descr.MaxRepetitionLevel() == 0 {

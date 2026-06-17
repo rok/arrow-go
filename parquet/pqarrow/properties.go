@@ -27,13 +27,14 @@ import (
 // ArrowWriterProperties are used to determine how to manipulate the arrow data
 // when writing it to a parquet file.
 type ArrowWriterProperties struct {
-	mem                      memory.Allocator
-	timestampAsInt96         bool
-	coerceTimestamps         bool
-	coerceTimestampUnit      arrow.TimeUnit
-	allowTruncatedTimestamps bool
-	storeSchema              bool
-	noMapLogicalType         bool
+	mem                        memory.Allocator
+	timestampAsInt96           bool
+	coerceTimestamps           bool
+	coerceTimestampUnit        arrow.TimeUnit
+	allowTruncatedTimestamps   bool
+	storeSchema                bool
+	noMapLogicalType           bool
+	writeFixedSizeListAsVector bool
 	// compliantNestedTypes     bool
 }
 
@@ -116,6 +117,28 @@ func WithStoreSchema() WriterOption {
 func WithNoMapLogicalType() WriterOption {
 	return func(c *config) {
 		c.props.noMapLogicalType = true
+	}
+}
+
+// WithVectorEncoding is EXPERIMENTAL. It enables encoding supported Arrow
+// FixedSizeList columns as the Parquet VECTOR repetition type (Option B)
+// instead of the standard 3-level LIST encoding, eliminating per-element
+// repetition levels for fixed-shape data.
+//
+// In this initial form only top-level, non-nullable FixedSizeList values with a
+// positive list size and a fixed-width primitive element are encoded as VECTOR;
+// every other FixedSizeList (nullable values or elements, zero-length,
+// variable-width, dictionary, extension, struct, nested-list elements, or nested
+// FixedSizeList fields) transparently falls back to the standard LIST encoding.
+// VECTOR does not broaden Parquet's Arrow type support: if an element type is
+// not supported by the standard Parquet conversion, writing still returns an
+// error.
+//
+// Files written with VECTOR are not readable by Parquet readers that do not
+// understand the VECTOR repetition type.
+func WithVectorEncoding() WriterOption {
+	return func(c *config) {
+		c.props.writeFixedSizeListAsVector = true
 	}
 }
 

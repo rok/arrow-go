@@ -121,7 +121,7 @@ func (w *Int32ColumnChunkWriter) WriteBatchSpaced(values []int32, defLevels, rep
 	if defLevels == nil {
 		length = len(values)
 	}
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		var vals []int32
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 
@@ -157,7 +157,7 @@ func (w *Int32ColumnChunkWriter) WriteDictIndices(indices arrow.Array, defLevels
 
 	dictEncoder := w.currentEncoder.(encoding.DictEncoder)
 
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 		w.writeLevelsSpaced(batch, levelSliceOrNil(defLevels, offset, batch), levelSliceOrNil(repLevels, offset, batch))
 
@@ -362,7 +362,7 @@ func (w *Int64ColumnChunkWriter) WriteBatchSpaced(values []int64, defLevels, rep
 	if defLevels == nil {
 		length = len(values)
 	}
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		var vals []int64
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 
@@ -398,7 +398,7 @@ func (w *Int64ColumnChunkWriter) WriteDictIndices(indices arrow.Array, defLevels
 
 	dictEncoder := w.currentEncoder.(encoding.DictEncoder)
 
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 		w.writeLevelsSpaced(batch, levelSliceOrNil(defLevels, offset, batch), levelSliceOrNil(repLevels, offset, batch))
 
@@ -603,7 +603,7 @@ func (w *Int96ColumnChunkWriter) WriteBatchSpaced(values []parquet.Int96, defLev
 	if defLevels == nil {
 		length = len(values)
 	}
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		var vals []parquet.Int96
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 
@@ -639,7 +639,7 @@ func (w *Int96ColumnChunkWriter) WriteDictIndices(indices arrow.Array, defLevels
 
 	dictEncoder := w.currentEncoder.(encoding.DictEncoder)
 
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 		w.writeLevelsSpaced(batch, levelSliceOrNil(defLevels, offset, batch), levelSliceOrNil(repLevels, offset, batch))
 
@@ -844,7 +844,7 @@ func (w *Float32ColumnChunkWriter) WriteBatchSpaced(values []float32, defLevels,
 	if defLevels == nil {
 		length = len(values)
 	}
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		var vals []float32
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 
@@ -880,7 +880,7 @@ func (w *Float32ColumnChunkWriter) WriteDictIndices(indices arrow.Array, defLeve
 
 	dictEncoder := w.currentEncoder.(encoding.DictEncoder)
 
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 		w.writeLevelsSpaced(batch, levelSliceOrNil(defLevels, offset, batch), levelSliceOrNil(repLevels, offset, batch))
 
@@ -1085,7 +1085,7 @@ func (w *Float64ColumnChunkWriter) WriteBatchSpaced(values []float64, defLevels,
 	if defLevels == nil {
 		length = len(values)
 	}
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		var vals []float64
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 
@@ -1121,7 +1121,7 @@ func (w *Float64ColumnChunkWriter) WriteDictIndices(indices arrow.Array, defLeve
 
 	dictEncoder := w.currentEncoder.(encoding.DictEncoder)
 
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 		w.writeLevelsSpaced(batch, levelSliceOrNil(defLevels, offset, batch), levelSliceOrNil(repLevels, offset, batch))
 
@@ -1329,7 +1329,7 @@ func (w *BooleanColumnChunkWriter) WriteBatchSpaced(values []bool, defLevels, re
 	if defLevels == nil {
 		length = len(values)
 	}
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		var vals []bool
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 
@@ -1391,7 +1391,7 @@ func (w *BooleanColumnChunkWriter) WriteBitmapBatchSpaced(bitmap []byte, bitmapO
 		length = numValues
 	}
 
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 
 		w.writeLevelsSpaced(batch, levelSliceOrNil(defLevels, offset, batch), levelSliceOrNil(repLevels, offset, batch))
@@ -1424,7 +1424,7 @@ func (w *BooleanColumnChunkWriter) WriteDictIndices(indices arrow.Array, defLeve
 
 	dictEncoder := w.currentEncoder.(encoding.DictEncoder)
 
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 		w.writeLevelsSpaced(batch, levelSliceOrNil(defLevels, offset, batch), levelSliceOrNil(repLevels, offset, batch))
 
@@ -1661,6 +1661,13 @@ func (w *ByteArrayColumnChunkWriter) WriteBatch(values []parquet.ByteArray, defL
 	maxDefLevel := w.descr.MaxDefinitionLevel()
 	isV2WithRep := w.props.DataPageVersion() != parquet.DataPageV1 &&
 		repLevels != nil && w.descr.MaxRepetitionLevel() > 0
+	// VECTOR columns (Option B) contribute a fixed number of leaf slots per row
+	// and carry no per-element levels. Every batch must cover whole vectors so a
+	// vector value is never split across data pages and rowsForLeafValues only
+	// ever sees whole-vector counts. vectorLen is 0 for non-VECTOR columns, which
+	// leaves the batching below unchanged.
+	vectorLen := w.vectorLengthForBatch(n)
+	batchSize = alignBatchToVector(batchSize, vectorLen)
 	levelOffset := int64(0)
 
 	for levelOffset < n {
@@ -1692,6 +1699,10 @@ func (w *ByteArrayColumnChunkWriter) WriteBatch(values []parquet.ByteArray, defL
 				batch--
 			}
 		}
+		// Keep every batch on a whole-vector boundary for VECTOR columns, even after
+		// the data-size scan or V2 alignment trimmed it. A single vector that exceeds
+		// the size cap is still written whole rather than split across pages.
+		batch = alignBatchToVector(batch, vectorLen)
 		if batch < 1 {
 			batch = 1
 		}
@@ -1742,6 +1753,8 @@ func (w *ByteArrayColumnChunkWriter) WriteBatchSpaced(values []parquet.ByteArray
 	batchSize := w.props.WriteBatchSize()
 	levelOffset := int64(0)
 	n := int64(length)
+	vectorLen := w.vectorLengthForBatch(n)
+	batchSize = alignBatchToVector(batchSize, vectorLen)
 
 	for levelOffset < n {
 		remaining := n - levelOffset
@@ -1759,6 +1772,7 @@ func (w *ByteArrayColumnChunkWriter) WriteBatchSpaced(values []parquet.ByteArray
 				cumDataSize += valSize
 			}
 		}
+		batch = alignBatchToVector(batch, vectorLen)
 		if batch < 1 {
 			batch = 1
 		}
@@ -1801,7 +1815,7 @@ func (w *ByteArrayColumnChunkWriter) WriteDictIndices(indices arrow.Array, defLe
 
 	dictEncoder := w.currentEncoder.(encoding.DictEncoder)
 
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 		w.writeLevelsSpaced(batch, levelSliceOrNil(defLevels, offset, batch), levelSliceOrNil(repLevels, offset, batch))
 
@@ -1975,6 +1989,13 @@ func (w *FixedLenByteArrayColumnChunkWriter) WriteBatch(values []parquet.FixedLe
 	maxDefLevel := w.descr.MaxDefinitionLevel()
 	isV2WithRep := w.props.DataPageVersion() != parquet.DataPageV1 &&
 		repLevels != nil && w.descr.MaxRepetitionLevel() > 0
+	// VECTOR columns (Option B) contribute a fixed number of leaf slots per row
+	// and carry no per-element levels. Every batch must cover whole vectors so a
+	// vector value is never split across data pages and rowsForLeafValues only
+	// ever sees whole-vector counts. vectorLen is 0 for non-VECTOR columns, which
+	// leaves the batching below unchanged.
+	vectorLen := w.vectorLengthForBatch(n)
+	batchSize = alignBatchToVector(batchSize, vectorLen)
 	levelOffset := int64(0)
 
 	for levelOffset < n {
@@ -2006,6 +2027,10 @@ func (w *FixedLenByteArrayColumnChunkWriter) WriteBatch(values []parquet.FixedLe
 				batch--
 			}
 		}
+		// Keep every batch on a whole-vector boundary for VECTOR columns, even after
+		// the data-size scan or V2 alignment trimmed it. A single vector that exceeds
+		// the size cap is still written whole rather than split across pages.
+		batch = alignBatchToVector(batch, vectorLen)
 		if batch < 1 {
 			batch = 1
 		}
@@ -2056,6 +2081,8 @@ func (w *FixedLenByteArrayColumnChunkWriter) WriteBatchSpaced(values []parquet.F
 	batchSize := w.props.WriteBatchSize()
 	levelOffset := int64(0)
 	n := int64(length)
+	vectorLen := w.vectorLengthForBatch(n)
+	batchSize = alignBatchToVector(batchSize, vectorLen)
 
 	for levelOffset < n {
 		remaining := n - levelOffset
@@ -2073,6 +2100,7 @@ func (w *FixedLenByteArrayColumnChunkWriter) WriteBatchSpaced(values []parquet.F
 				cumDataSize += valSize
 			}
 		}
+		batch = alignBatchToVector(batch, vectorLen)
 		if batch < 1 {
 			batch = 1
 		}
@@ -2115,7 +2143,7 @@ func (w *FixedLenByteArrayColumnChunkWriter) WriteDictIndices(indices arrow.Arra
 
 	dictEncoder := w.currentEncoder.(encoding.DictEncoder)
 
-	doBatches(int64(length), w.props.WriteBatchSize(), func(offset, batch int64) {
+	w.doBatchesAlignedForVector(int64(length), repLevels, func(offset, batch int64) {
 		info := w.maybeCalculateValidityBits(levelSliceOrNil(defLevels, offset, batch), batch)
 		w.writeLevelsSpaced(batch, levelSliceOrNil(defLevels, offset, batch), levelSliceOrNil(repLevels, offset, batch))
 

@@ -85,6 +85,19 @@ func (r *RowGroupReader) GetColumnPageReader(i int) (PageReader, error) {
 	if err != nil {
 		return nil, err
 	}
+	if descr := r.fileMetadata.Schema.Column(i); descr.InVectorColumn() {
+		vectorLen := int64(descr.EffectiveVectorLength())
+		if col.NumValues()%vectorLen != 0 {
+			return nil, fmt.Errorf("parquet: VECTOR column %q has %d values, not a multiple of vector length %d", descr.Path(), col.NumValues(), vectorLen)
+		}
+		wantValues, ok := utils.Mul64(r.rgMetadata.NumRows(), vectorLen)
+		if !ok {
+			return nil, fmt.Errorf("parquet: VECTOR column %q row count overflows vector length %d", descr.Path(), vectorLen)
+		}
+		if col.NumValues() != wantValues {
+			return nil, fmt.Errorf("parquet: VECTOR column %q has %d values for %d rows and vector length %d", descr.Path(), col.NumValues(), r.rgMetadata.NumRows(), vectorLen)
+		}
+	}
 
 	rgIdxRdr, err := r.rgPageIndexReader()
 	if err != nil {
@@ -128,6 +141,7 @@ func (r *RowGroupReader) GetColumnPageReader(i int) (PageReader, error) {
 			pgIndexReader:     rgIdxRdr,
 			maxPageHeaderSize: defaultMaxPageHeaderSize,
 			nrows:             col.NumValues(),
+			parentRows:        r.rgMetadata.NumRows(),
 			mem:               r.props.Allocator(),
 		}
 		return pr, pr.init(col.Compression(), nil)
@@ -157,6 +171,7 @@ func (r *RowGroupReader) GetColumnPageReader(i int) (PageReader, error) {
 			pgIndexReader:     rgIdxRdr,
 			maxPageHeaderSize: defaultMaxPageHeaderSize,
 			nrows:             col.NumValues(),
+			parentRows:        r.rgMetadata.NumRows(),
 			mem:               r.props.Allocator(),
 			cryptoCtx:         ctx,
 		}
@@ -181,6 +196,7 @@ func (r *RowGroupReader) GetColumnPageReader(i int) (PageReader, error) {
 		pgIndexReader:     rgIdxRdr,
 		maxPageHeaderSize: defaultMaxPageHeaderSize,
 		nrows:             col.NumValues(),
+		parentRows:        r.rgMetadata.NumRows(),
 		mem:               r.props.Allocator(),
 		cryptoCtx:         ctx,
 	}
